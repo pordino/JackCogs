@@ -1,4 +1,5 @@
 from string import Template
+import os
 
 from redbot.core import commands, checks
 from redbot.core.config import Config
@@ -14,6 +15,7 @@ class BanMessage(commands.Cog):
         )
         self.config.register_guild(channel=None, message_template=None)
         self.message_images = cog_data_path(self) / "message_images"
+        os.makedirs(self.message_images, exist_ok=True)
 
     @commands.group()
     @checks.admin()
@@ -52,9 +54,9 @@ class BanMessage(commands.Cog):
                 return
             ext = a.url.rpartition('.')[2]
             filename = self.message_images / f"{ctx.guild.id}.{ext}"
-            with open(filename, "w") as fp:
+            with open(filename, "wb") as fp:
                 await a.save(fp)
-            file = discord.File(fp)
+            file = discord.File(filename)
         else:
             for file in self.message_images.glob(f"{ctx.guild.id}.*"):
                 file.unlink()
