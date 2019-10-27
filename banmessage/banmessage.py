@@ -33,7 +33,9 @@ class BanMessage(commands.Cog):
             guild_obj = discord.Object(id=guild_id)
             maybe_message_template = guild_data.get("message_template")
             if maybe_message_template:
-                await self.config.guild(guild_obj).message_templates.set([maybe_message_template])
+                await self.config.guild(guild_obj).message_templates.set(
+                    [maybe_message_template]
+                )
 
     @commands.group()
     @checks.admin()
@@ -46,8 +48,10 @@ class BanMessage(commands.Cog):
     ):
         """Set channel for ban messages. Leave empty to disable."""
         if channel is None:
-            await self.config.guild(channel.guild).channel.clear()
-        await self.config.guild(channel.guild).channel.set(channel.id)
+            await self.config.guild(ctx.guild).channel.clear()
+            await ctx.send("Ban messages are now disabled.")
+            return
+        await self.config.guild(ctx.guild).channel.set(channel.id)
         await ctx.send(f"Ban messages will now be sent in {channel.mention}")
 
     @banmessageset.command(name="addmessage")
