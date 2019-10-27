@@ -2,4 +2,6 @@ from .banmessage import BanMessage
 
 
 def setup(bot):
-    bot.add_cog(BanMessage(bot))
+    cog = BanMessage(bot)
+    await cog.initialize()
+    bot.add_cog(cog)
