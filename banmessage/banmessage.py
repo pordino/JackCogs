@@ -33,9 +33,11 @@ class BanMessage(commands.Cog):
             guild_obj = discord.Object(id=guild_id)
             maybe_message_template = guild_data.get("message_template")
             if maybe_message_template:
-                await self.config.guild(guild_obj).message_templates.set(
+                scope = self.config.guild(guild_obj)
+                await scope.message_templates.set(
                     [maybe_message_template]
                 )
+                await scope.clear_raw("message_template")
 
     @commands.group()
     @checks.admin()
