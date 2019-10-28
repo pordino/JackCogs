@@ -110,6 +110,7 @@ class BanMessage(commands.Cog):
 
     @banmessageset.command(name="setimage")
     async def banmessageset_setimage(self, ctx: commands.Context):
+        """Set image for ban message."""
         if len(ctx.message.attachments) != 1:
             await ctx.send("You have to send exactly one attachment.")
             return
@@ -128,6 +129,7 @@ class BanMessage(commands.Cog):
 
     @banmessageset.command(name="unsetimage")
     async def banmessageset_unsetimage(self, ctx: commands.Context):
+        """Unset image for ban message."""
         for file in self.message_images.glob(f"{ctx.guild.id}.*"):
             file.unlink()
         await ctx.send("Image unset.")
