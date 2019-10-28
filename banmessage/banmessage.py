@@ -65,7 +65,7 @@ class BanMessage(commands.Cog):
         Note: Ban message can also have image.
         To set it, use `[p]banmessageset setimage`
         """
-        async with self.config.guild(ctx.guild).message_templates as templates:
+        async with self.config.guild(ctx.guild).message_templates() as templates:
             templates.append(message)
         content = Template(message).safe_substitute(
             username=str(ctx.author), server=ctx.guild.name
@@ -81,7 +81,7 @@ class BanMessage(commands.Cog):
     @banmessageset.command(name="removemessage")
     async def banmessageset_removemessage(self, ctx: commands.Context):
         """Remove ban message."""
-        templates = await self.config.guild(ctx.guild).message_templates
+        templates = await self.config.guild(ctx.guild).message_templates()
         if not templates:
             await ctx.send("This guild doesn't have any ban message set.")
             return
