@@ -68,8 +68,7 @@ class BanMessage(commands.Cog):
         async with self.config.guild(ctx.guild).message_templates as templates:
             templates.append(message)
         content = Template(message).safe_substitute(
-            username=str(ctx.author),
-            server=ctx.guild.name,
+            username=str(ctx.author), server=ctx.guild.name
         )
         filename = next(self.message_images.glob(f"{ctx.guild.id}.*"), None)
         if filename is not None:
@@ -118,10 +117,13 @@ class BanMessage(commands.Cog):
         if a.width is None:
             await ctx.send("The attachment has to be an image.")
             return
-        ext = a.url.rpartition('.')[2]
+        ext = a.url.rpartition(".")[2]
         filename = self.message_images / f"{ctx.guild.id}.{ext}"
         with open(filename, "wb") as fp:
             await a.save(fp)
+        for file in self.message_images.glob(f"{ctx.guild.id}.*"):
+            if not file == filename:
+                file.unlink()
         await ctx.send("Image set.")
 
     @banmessageset.command(name="unsetimage")
@@ -146,8 +148,7 @@ class BanMessage(commands.Cog):
         message_template = random.choice(message_templates)
 
         content = Template(message_template).safe_substitute(
-            username=str(user),
-            server=guild.name,
+            username=str(user), server=guild.name
         )
         filename = next(self.message_images.glob(f"{guild.id}.*"), None)
         if filename is not None:
