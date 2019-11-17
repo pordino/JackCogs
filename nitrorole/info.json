@@ -1,0 +1,21 @@
+{
+    "author": [
+        "jack1142 (Jackenmen#6607)"
+    ],
+    "disabled": false,
+    "install_msg": "Thanks for installing NitroRole. If anything doesn't work, you can report it on my issue tracker at <https://github.com/jack1142/JackCogs/issues>.",
+    "type": "COG",
+    "hidden": false,
+    "name": "NitroRole",
+    "short": "Welcome new nitro boosters and/or give them a special role!",
+    "description": "Welcome new nitro boosters and/or give them a special role!",
+    "tags": [
+        "announce",
+        "booster",
+        "nitro",
+        "nitrorole",
+        "welcome"
+    ],
+    "required_cogs": {},
+    "requirements": []
+}
