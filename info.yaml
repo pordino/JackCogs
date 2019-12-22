@@ -31,6 +31,24 @@ cogs:
       - utility
     requirements:
       - typing_extensions>=3.7.4
+  modroles:
+    name: ModRoles
+    short: >-
+      Allow moderators without manage roles permission
+      to assign configured roles to users.
+    description: >-
+      Allow moderators without manage roles permission
+      to assign configured roles to users.
+    install_msg: >-
+      Thanks for installing {cog_name}. This cog comes with limited support from me,
+      you can ping me on #support_othercogs in Cog Support server (discord.gg/GET4DVk)
+      when you have some issue or feature request, but I might decide not to help.
+    tags:
+      - moderation
+      - modroles
+      - roles
+      - tools
+      - utility
   rlstats:
     name: RLStats
     short: >-

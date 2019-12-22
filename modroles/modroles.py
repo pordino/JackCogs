@@ -15,8 +15,12 @@ class ModRoles(commands.Cog):
         )
         self.config.register_guild(assignable_roles=[])
 
-    async def _assign_checks(self, ctx, member):
-        if ctx.author.id in {ctx.guild.owner.id, self.bot.owner_id, member.id}:
+    async def _assign_checks(
+        self, ctx: commands.Context, member: discord.Member
+    ) -> bool:
+        if await self.bot.is_owner(ctx.author):
+            return True
+        if ctx.author.id in {ctx.guild.owner.id, member.id}:
             return True
         if ctx.guild.me == member:
             await ctx.send("Pfft, you can't apply roles to me.")
@@ -34,7 +38,9 @@ class ModRoles(commands.Cog):
     @commands.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_roles=True)
-    async def assignrole(self, ctx, role: AssignableRole, *, member: discord.Member):
+    async def assignrole(
+        self, ctx: commands.Context, role: AssignableRole, *, member: discord.Member
+    ) -> None:
         """Assign a role to a member.
 
         NOTE: The role is case sensitive!
@@ -61,8 +67,10 @@ class ModRoles(commands.Cog):
     @commands.command()
     @commands.guild_only()
     @checks.mod_or_permissions(manage_roles=True)
-    async def unassignrole(self, ctx, role: AssignableRole, *, member: discord.Member):
-        """Unassign a role to a member.
+    async def unassignrole(
+        self, ctx: commands.Context, role: AssignableRole, *, member: discord.Member
+    ) -> None:
+        """Unassign a role from a member.
 
         NOTE: The role is case sensitive!
         """
@@ -88,11 +96,11 @@ class ModRoles(commands.Cog):
     @commands.group()
     @commands.guild_only()
     @checks.admin_or_permissions(manage_roles=True)
-    async def modroles(self, ctx):
+    async def modroles(self, ctx: commands.Context) -> None:
         """Settings for assignable roles"""
 
     @modroles.command(name="add")
-    async def modroles_add(self, ctx, *, role: discord.Role):
+    async def modroles_add(self, ctx: commands.Context, *, role: discord.Role) -> None:
         """Add assignable role."""
         conf_group = self.config.guild(ctx.guild).assignable_roles
         assignable_roles = await conf_group()
@@ -103,14 +111,16 @@ class ModRoles(commands.Cog):
         await ctx.send(f"Role {role.name} added to assignable roles.")
 
     @modroles.command(name="remove")
-    async def modroles_remove(self, ctx, *, role: AssignableRole):
+    async def modroles_remove(
+        self, ctx: commands.Context, *, role: AssignableRole
+    ) -> None:
         """Remove assignable role."""
         async with self.config.guild(ctx.guild).assignable_roles() as assignable_roles:
             assignable_roles.remove(role.id)
         await ctx.send(f"Role {role.name} removed from assignable roles.")
 
     @modroles.command(name="list")
-    async def modroles_list(self, ctx):
+    async def modroles_list(self, ctx: commands.Context) -> None:
         assignable_roles = set(await self.config.guild(ctx.guild).assignable_roles())
         valid_roles = tuple(r for r in ctx.guild.roles if r.id in assignable_roles)
         valid_roles_ids = set(r.id for r in valid_roles)
