@@ -21,6 +21,14 @@ shared_fields:
   hidden: false
 
 cogs:
+  banmessage:
+    name: BanMessage
+    short: Send message on ban in a chosen channel.
+    description: Send message on ban in a chosen channel.
+    tags:
+      - banmessage
+      - tools
+      - utility
   cogboard:
     name: CogBoard
     short: Search for cogs in approved repos on {cog_name}.

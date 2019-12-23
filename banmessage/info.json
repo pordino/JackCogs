@@ -1,9 +1,19 @@
 {
+    "author": [
+        "jack1142 (Jackenmen#6607)"
+    ],
+    "disabled": false,
+    "install_msg": "Thanks for installing BanMessage. If anything doesn't work, you can report it on my issue tracker at <https://github.com/jack1142/JackCogs/issues>.",
+    "type": "COG",
+    "hidden": false,
     "name": "BanMessage",
-    "author": ["jack1142"],
     "short": "Send message on ban in a chosen channel.",
     "description": "Send message on ban in a chosen channel.",
-    "install_msg": "Thanks for installing BanMessage. If anything doesn't work, you can use issue tracker on https://github.com/jack1142/JackCogs/issues",
-    "tags": ["tools", "banmessage", "cogs"],
-    "disabled": false
+    "tags": [
+        "banmessage",
+        "tools",
+        "utility"
+    ],
+    "required_cogs": {},
+    "requirements": []
 }
