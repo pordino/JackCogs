@@ -150,7 +150,7 @@ class BanMessage(commands.Cog):
             log.error(
                 "Channel with ID %s can't be found in guild with ID %s.",
                 channel_id,
-                guild.id
+                guild.id,
             )
             return
         message_templates = await self.config.guild(guild).message_templates()
@@ -171,5 +171,5 @@ class BanMessage(commands.Cog):
             log.error(
                 "Bot can't send messages in channel with ID %s (guild ID: %s)",
                 channel_id,
-                guild.id
+                guild.id,
             )
