@@ -1,0 +1,2 @@
+-r all_cogs.txt
+-r tools.txt

@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2018 jack1142
+Copyright (c) 2018-2019 Jakub Kuczys (jack1142)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-This project bundles fonts from Roboto family (https://fonts.google.com/specimen/Roboto) which is distributed on Apache License 2.0
+This project bundles fonts from Roboto family (https://fonts.google.com/specimen/Roboto) which is distributed under Apache License 2.0
+Copy of this license can be found in LICENSE.txt file in folder rlstats/data/fonts of this repository.
+
+This project bundles fonts from Animo family (https://fonts.google.com/specimen/Arimo) which is distributed under Apache License 2.0
+Copy of this license can be found in LICENSE.txt file in folder rlstats/data/fonts of this repository.
 
 This project bundles screenshot done by reddit user CastleintheMist (https://www.reddit.com/user/CastleintheMist/)
+
+This project bundles Steam, Playstation and Xbox logos from Ionicons icon set (https://ionicons.com/) which is released under MIT License.
+Copy of this license can be found in LICENSE.txt file in folder rlstats/data/images/platforms of this repository.
+All brand icons are trademarks of their respective owners. The use of these trademarks does not indicate endorsement of the trademark holder by me, nor vice versa.

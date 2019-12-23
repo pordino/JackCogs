@@ -1,3 +1,7 @@
+:warning: | All branches starting with `unfinished-cogs/` come with limited support and might not fully work.
+---: | :---
+:information_source: | If you use any "unfinished" cog, message me on Discord to get info about breaking changes that may affect you.
+
 [![Build Status](https://travis-ci.com/jack1142/JackCogs.svg?branch=wip/cleaning-code-v3)](https://travis-ci.com/jack1142/JackCogs/branches)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Red Bot](https://img.shields.io/badge/Discord-Red%20Bot-red.svg)](https://github.com/Twentysix26/Red-DiscordBot)
