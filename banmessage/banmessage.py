@@ -1,15 +1,18 @@
-from string import Template
-from typing import Union
 import asyncio
-import os
+import logging
 import random
+from string import Template
+from typing import Union, cast
 
+import discord
 from redbot.core import commands, checks
-from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core.config import Config
 from redbot.core.data_manager import cog_data_path
+from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core.utils.predicates import MessagePredicate
-import discord
+
+
+log = logging.getLogger("red.jackcogs.banmessage")
 
 
 class BanMessage(commands.Cog):
@@ -20,13 +23,13 @@ class BanMessage(commands.Cog):
         )
         self.config.register_guild(channel=None, message_templates=[])
         self.message_images = cog_data_path(self) / "message_images"
-        os.makedirs(self.message_images, exist_ok=True)
+        self.message_images.mkdir(exist_ok=True)
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         # gonna keep this for now, but technically this cog is still under limited support
         await self._maybe_update_config()
 
-    async def _maybe_update_config(self):
+    async def _maybe_update_config(self) -> None:
         # I'll just use Liz's code from core Red here
         all_guild_data = await self.config.all_guilds()
         for guild_id, guild_data in all_guild_data.items():
@@ -34,20 +37,18 @@ class BanMessage(commands.Cog):
             maybe_message_template = guild_data.get("message_template")
             if maybe_message_template:
                 scope = self.config.guild(guild_obj)
-                await scope.message_templates.set(
-                    [maybe_message_template]
-                )
+                await scope.message_templates.set([maybe_message_template])
                 await scope.clear_raw("message_template")
 
     @commands.group()
     @checks.admin()
-    async def banmessageset(self, ctx: commands.Context):
+    async def banmessageset(self, ctx: commands.Context) -> None:
         """BanMessage settings."""
 
     @banmessageset.command(name="channel")
     async def banmessageset_channel(
         self, ctx: commands.Context, channel: discord.TextChannel = None
-    ):
+    ) -> None:
         """Set channel for ban messages. Leave empty to disable."""
         if channel is None:
             await self.config.guild(ctx.guild).channel.clear()
@@ -57,7 +58,9 @@ class BanMessage(commands.Cog):
         await ctx.send(f"Ban messages will now be sent in {channel.mention}")
 
     @banmessageset.command(name="addmessage")
-    async def banmessageset_addmessage(self, ctx: commands.Context, *, message: str):
+    async def banmessageset_addmessage(
+        self, ctx: commands.Context, *, message: str
+    ) -> None:
         """Add ban message.
 
         Those fields will get replaced automatically:
@@ -73,15 +76,14 @@ class BanMessage(commands.Cog):
             username=str(ctx.author), server=ctx.guild.name
         )
         filename = next(self.message_images.glob(f"{ctx.guild.id}.*"), None)
+        file = None
         if filename is not None:
             file = discord.File(filename)
-        else:
-            file = None
         await ctx.send("Ban message set, sending a test message here...")
         await ctx.send(content, file=file)
 
     @banmessageset.command(name="removemessage")
-    async def banmessageset_removemessage(self, ctx: commands.Context):
+    async def banmessageset_removemessage(self, ctx: commands.Context) -> None:
         """Remove ban message."""
         templates = await self.config.guild(ctx.guild).message_templates()
         if not templates:
@@ -111,7 +113,7 @@ class BanMessage(commands.Cog):
         await ctx.send("Message removed.")
 
     @banmessageset.command(name="setimage")
-    async def banmessageset_setimage(self, ctx: commands.Context):
+    async def banmessageset_setimage(self, ctx: commands.Context) -> None:
         """Set image for ban message."""
         if len(ctx.message.attachments) != 1:
             await ctx.send("You have to send exactly one attachment.")
@@ -130,7 +132,7 @@ class BanMessage(commands.Cog):
         await ctx.send("Image set.")
 
     @banmessageset.command(name="unsetimage")
-    async def banmessageset_unsetimage(self, ctx: commands.Context):
+    async def banmessageset_unsetimage(self, ctx: commands.Context) -> None:
         """Unset image for ban message."""
         for file in self.message_images.glob(f"{ctx.guild.id}.*"):
             file.unlink()
@@ -139,12 +141,17 @@ class BanMessage(commands.Cog):
     @commands.Cog.listener()
     async def on_member_ban(
         self, guild: discord.Guild, user: Union[discord.User, discord.Member]
-    ):
+    ) -> None:
         channel_id = await self.config.guild(guild).channel()
         if channel_id is None:
             return
-        channel = guild.get_channel(channel_id)
+        channel = cast(discord.TextChannel, guild.get_channel(channel_id))
         if channel is None:
+            log.error(
+                "Channel with ID %s can't be found in guild with ID %s.",
+                channel_id,
+                guild.id
+            )
             return
         message_templates = await self.config.guild(guild).message_templates()
         if not message_templates:
@@ -155,11 +162,14 @@ class BanMessage(commands.Cog):
             username=str(user), server=guild.name
         )
         filename = next(self.message_images.glob(f"{guild.id}.*"), None)
+        file = None
         if filename is not None:
-            await channel.send(content, file=discord.File(filename))
-            return
-        await channel.send(content)
-
-
-def setup(bot):
-    bot.add_cog(BanMessage(bot))
+            file = discord.File(filename)
+        try:
+            await channel.send(content, file=file)
+        except discord.Forbidden:
+            log.error(
+                "Bot can't send messages in channel with ID %s (guild ID: %s)",
+                channel_id,
+                guild.id
+            )
