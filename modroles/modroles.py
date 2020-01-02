@@ -1,5 +1,6 @@
 import discord
 from redbot.core import commands, checks
+from redbot.core.bot import Red
 from redbot.core.config import Config
 from redbot.core.utils.chat_formatting import box
 from redbot.core.utils.mod import is_mod_or_superior
@@ -8,7 +9,9 @@ from .converters import AssignableRoleConverter as AssignableRole
 
 
 class ModRoles(commands.Cog):
-    def __init__(self, bot):
+    """Allow moderators to assign configured roles to users."""
+
+    def __init__(self, bot: Red) -> None:
         self.bot = bot
         self.config = Config.get_conf(
             self, identifier=176070082584248320, force_registration=True
@@ -41,7 +44,8 @@ class ModRoles(commands.Cog):
     async def assignrole(
         self, ctx: commands.Context, role: AssignableRole, *, member: discord.Member
     ) -> None:
-        """Assign a role to a member.
+        """
+        Assign a role to a member.
 
         NOTE: The role is case sensitive!
         """
@@ -70,7 +74,8 @@ class ModRoles(commands.Cog):
     async def unassignrole(
         self, ctx: commands.Context, role: AssignableRole, *, member: discord.Member
     ) -> None:
-        """Unassign a role from a member.
+        """
+        Unassign a role from a member.
 
         NOTE: The role is case sensitive!
         """

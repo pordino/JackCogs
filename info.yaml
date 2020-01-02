@@ -51,10 +51,7 @@ cogs:
     description: >-
       Allow moderators without manage roles permission
       to assign configured roles to users.
-    install_msg: >-
-      Thanks for installing {cog_name}. This cog comes with limited support from me,
-      you can ping me on #support_othercogs in Cog Support server (discord.gg/GET4DVk)
-      when you have some issue or feature request, but I might decide not to help.
+    class_docstring: Allow moderators to assign configured roles to users.
     tags:
       - moderation
       - modroles
