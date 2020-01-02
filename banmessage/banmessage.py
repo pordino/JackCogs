@@ -6,6 +6,7 @@ from typing import Union, cast
 
 import discord
 from redbot.core import commands, checks
+from redbot.core.bot import Red
 from redbot.core.config import Config
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import box, pagify
@@ -16,7 +17,9 @@ log = logging.getLogger("red.jackcogs.banmessage")
 
 
 class BanMessage(commands.Cog):
-    def __init__(self, bot):
+    """Send message on ban in a chosen channel. Supports images!"""
+
+    def __init__(self, bot: Red) -> None:
         self.bot = bot
         self.config = Config.get_conf(
             self, identifier=176070082584248320, force_registration=True
@@ -24,21 +27,6 @@ class BanMessage(commands.Cog):
         self.config.register_guild(channel=None, message_templates=[])
         self.message_images = cog_data_path(self) / "message_images"
         self.message_images.mkdir(exist_ok=True)
-
-    async def initialize(self) -> None:
-        # gonna keep this for now, but technically this cog is still under limited support
-        await self._maybe_update_config()
-
-    async def _maybe_update_config(self) -> None:
-        # I'll just use Liz's code from core Red here
-        all_guild_data = await self.config.all_guilds()
-        for guild_id, guild_data in all_guild_data.items():
-            guild_obj = discord.Object(id=guild_id)
-            maybe_message_template = guild_data.get("message_template")
-            if maybe_message_template:
-                scope = self.config.guild(guild_obj)
-                await scope.message_templates.set([maybe_message_template])
-                await scope.clear_raw("message_template")
 
     @commands.group()
     @checks.admin()
@@ -61,7 +49,8 @@ class BanMessage(commands.Cog):
     async def banmessageset_addmessage(
         self, ctx: commands.Context, *, message: str
     ) -> None:
-        """Add ban message.
+        """
+        Add ban message.
 
         Those fields will get replaced automatically:
         $username - The banned user's name

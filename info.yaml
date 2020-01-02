@@ -23,8 +23,12 @@ shared_fields:
 cogs:
   banmessage:
     name: BanMessage
-    short: Send message on ban in a chosen channel.
-    description: Send message on ban in a chosen channel.
+    short: Send message on ban in a chosen channel. Supports images!
+    description: Send message on ban in a chosen channel. Supports images!
+    install_msg: >-
+      {shared_fields.install_msg}
+
+      This cog saves images set with `[p]banmessageset setimage` to data path.
     tags:
       - banmessage
       - tools

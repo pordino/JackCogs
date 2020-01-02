@@ -1,7 +1,8 @@
+from redbot.core.bot import Red
+
 from .banmessage import BanMessage
 
 
-async def setup(bot):
+async def setup(bot: Red):
     cog = BanMessage(bot)
-    await cog.initialize()
     bot.add_cog(cog)

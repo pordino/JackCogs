@@ -1,19 +1,16 @@
 {
-    "author": [
-        "jack1142 (Jackenmen#6607)"
-    ],
-    "disabled": false,
-    "install_msg": "Thanks for installing BanMessage. If anything doesn't work, you can report it on my issue tracker at <https://github.com/jack1142/JackCogs/issues>.",
-    "type": "COG",
-    "hidden": false,
     "name": "BanMessage",
-    "short": "Send message on ban in a chosen channel.",
-    "description": "Send message on ban in a chosen channel.",
+    "short": "Send message on ban in a chosen channel. Supports images!",
+    "description": "Send message on ban in a chosen channel. Supports images!",
+    "install_msg": "Thanks for installing BanMessage. If anything doesn't work, you can report it on my issue tracker at <https://github.com/jack1142/JackCogs/issues>.\nThis cog saves images set with `[p]banmessageset setimage` to data path.",
+    "required_cogs": {},
+    "requirements": [],
     "tags": [
         "banmessage",
         "tools",
         "utility"
     ],
-    "required_cogs": {},
-    "requirements": []
+    "hidden": false,
+    "disabled": false,
+    "type": "COG"
 }
