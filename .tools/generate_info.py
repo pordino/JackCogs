@@ -1,7 +1,18 @@
+"""Script to automatically generate info.json files
+and generate class docstrings from single info.yaml file for whole repo.
+
+DISCLAIMER: While this script works, it uses some hacks and I don't recommend using it
+if you don't understand how it does some stuff and why it does it like this.
+"""
+
 from collections.abc import Sequence
 from pathlib import Path
+from types import SimpleNamespace
 import json
 import re
+import string
+import subprocess
+import sys
 import typing
 
 from redbot import VersionInfo
@@ -23,9 +34,42 @@ from strictyaml import (
 from strictyaml.exceptions import YAMLValidationError, YAMLSerializationError
 from strictyaml.utils import is_string
 from strictyaml.yamllocation import YAMLChunk
+import parso
 
 
 ROOT_PATH = Path(__file__).absolute().parent.parent
+
+# `FormatPlaceholder`, `FormatDict` and `safe_format_alt` taken from
+# https://stackoverflow.com/posts/comments/100958805
+
+
+class FormatPlaceholder:
+    def __init__(self, key):
+        self.key = key
+
+    def __format__(self, spec):
+        result = self.key
+        if spec:
+            result += ":" + spec
+        return "{" + result + "}"
+
+    def __getitem__(self, index):
+        self.key = f"{self.key}[{index}]"
+        return self
+
+    def __getattr__(self, attr):
+        self.key = f"{self.key}.{attr}"
+        return self
+
+
+class FormatDict(dict):
+    def __missing__(self, key):
+        return FormatPlaceholder(key)
+
+
+def safe_format_alt(text, source):
+    formatter = string.Formatter()
+    return formatter.vformat(text, (), FormatDict(source))
 
 
 class PythonVersion(ScalarValidator):
@@ -73,6 +117,7 @@ class PythonVersion(ScalarValidator):
         )
 
 
+# TODO: allow author in COG_KEYS and merge them with repo/shared fields lists
 REPO_KEYS = {
     "name": Str(),  # Downloader doesn't use this but I can set friendlier name
     "short": Str(),
@@ -89,19 +134,20 @@ COMMON_KEYS = {
     Optional("type", "COG"): Enum(["COG", "SHARED_LIBRARY"]),
 }
 SHARED_FIELDS_KEYS = {
-    **COMMON_KEYS,
     "install_msg": Str(),
     "author": Seq(Str()),
+    **COMMON_KEYS,
 }
 COG_KEYS = {
-    **COMMON_KEYS,
     "name": Str(),  # Downloader doesn't use this but I can set friendlier name
     "short": Str(),
     "description": Str(),
+    Optional("class_docstring"): Str(),
     Optional("install_msg"): Str(),
     Optional("required_cogs", {}): EmptyDict() | MapPattern(Str(), Url()),
     Optional("requirements", []): EmptyList() | Seq(Str()),
     Optional("tags", []): EmptyList() | Seq(Str()),
+    **COMMON_KEYS,
 }
 SCHEMA = Map(
     {
@@ -110,19 +156,193 @@ SCHEMA = Map(
         "cogs": MapPattern(Str(), Map(COG_KEYS)),
     }
 )
+SKIP_COG_KEYS_INFO_JSON = {"class_docstring"}
+# TODO: auto-format to proper key order
+AUTOLINT_REPO_KEYS_ORDER = list(REPO_KEYS.keys())
+AUTOLINT_SHARED_FIELDS_KEYS_ORDER = list(
+    getattr(key, "key", key) for key in SHARED_FIELDS_KEYS
+)
+AUTOLINT_COG_KEYS_ORDER = list(getattr(key, "key", key) for key in COG_KEYS)
 
 
-def main() -> None:
+def check_order(data: dict) -> int:
+    """Temporary order checking, until strictyaml adds proper support for sorting."""
+    to_check = {
+        "repo": AUTOLINT_REPO_KEYS_ORDER,
+        "shared_fields": AUTOLINT_SHARED_FIELDS_KEYS_ORDER,
+    }
+    exit_code = 0
+    for key, order in to_check.items():
+        section = data[key]
+        original_keys = list(section.keys())
+        sorted_keys = sorted(section.keys(), key=order.index)
+        if original_keys != sorted_keys:
+            print(
+                "\033[93m\033[1mWARNING:\033[0m "
+                f"Keys in `{key}` section have wrong order - use this order: "
+                f"{', '.join(sorted_keys)}"
+            )
+            exit_code = 1
+
+    original_cog_names = list(data["cogs"].keys())
+    sorted_cog_names = sorted(data["cogs"].keys())
+    if original_cog_names != sorted_cog_names:
+        print(
+            "\033[93m\033[1mWARNING:\033[0m "
+            f"Cog names in `cogs` section aren't sorted. Use alphabetical order."
+        )
+        exit_code = 1
+
+    for pkg_name, cog_info in data["cogs"].items():
+        # strictyaml breaks ordering of keys for some reason
+        original_keys = list((k for k, v in cog_info.items() if v))
+        sorted_keys = sorted(
+            (k for k, v in cog_info.items() if v), key=AUTOLINT_COG_KEYS_ORDER.index
+        )
+        if original_keys != sorted_keys:
+            print(
+                "\033[93m\033[1mWARNING:\033[0m "
+                f"Keys in `cogs->{pkg_name}` section have wrong order"
+                f" - use this order: {', '.join(sorted_keys)}"
+            )
+            print(original_keys)
+            print(sorted_keys)
+            exit_code = 1
+        for key in ("required_cogs", "requirements", "tags"):
+            list_or_dict = cog_info[key]
+            if hasattr(list_or_dict, "keys"):
+                original_list = list(list_or_dict.keys())
+            else:
+                original_list = list_or_dict
+            sorted_list = sorted(original_list)
+            if original_list != sorted_list:
+                friendly_name = key.capitalize().replace("_", " ")
+                print(
+                    "\033[93m\033[1mWARNING:\033[0m "
+                    f"{friendly_name} for `{pkg_name}` cog aren't sorted."
+                    " Use alphabetical order."
+                )
+                print(original_list)
+                print(sorted_list)
+                exit_code = 1
+
+    return exit_code
+
+
+def update_class_docstrings(cogs: dict, repo_info: dict) -> int:
+    """Update class docstrings with descriptions from info.yaml
+
+    This is created with few assumptions:
+    - name of cog's class is under "name" key in `cogs` dictionary
+    - following imports until we find class definition is enough to find it
+      - class name is imported directly:
+      `from .rlstats import RLStats` not `from . import rlstats`
+      - import is relative
+      - star imports are ignored
+    """
+    for pkg_name, cog_info in cogs.items():
+        class_name = cog_info["name"]
+        path = ROOT_PATH / pkg_name / "__init__.py"
+        if not path.is_file():
+            raise RuntimeError("Folder `{pkg_name}` isn't a valid package.")
+        while True:
+            with path.open(encoding="utf-8") as fp:
+                source = fp.read()
+                tree = parso.parse(source)
+            class_node = next(
+                (
+                    node
+                    for node in tree.iter_classdefs()
+                    if node.name.value == class_name
+                ),
+                None,
+            )
+            if class_node is not None:
+                break
+
+            for import_node in tree.iter_imports():
+                if import_node.is_star_import():
+                    # we're ignoring star imports
+                    continue
+                for import_path in import_node.get_paths():
+                    if import_path[-1].value == class_name:
+                        break
+                else:
+                    continue
+
+                if import_node.level == 0:
+                    raise RuntimeError(
+                        "Script expected relative import of cog's class."
+                    )
+                if import_node.level > 1:
+                    raise RuntimeError(
+                        "Attempted relative import beyond top-level package."
+                    )
+                path = ROOT_PATH / pkg_name
+                for part in import_path[:-1]:
+                    path /= part.value
+                path = path.with_suffix(".py")
+                if not path.is_file():
+                    raise RuntimeError(
+                        f"Path `{path}` isn't a valid file. Finding cog's class failed."
+                    )
+                break
+
+        doc_node = class_node.get_doc_node()
+        new_docstring = cog_info.get("class_docstring") or cog_info["short"]
+        replacements = {
+            "repo_name": repo_info["name"],
+            "cog_name": cog_info["name"],
+        }
+        new_docstring = new_docstring.format_map(replacements)
+        if doc_node is not None:
+            doc_node.value = f'"""{new_docstring}"""'
+        else:
+            first_leaf = class_node.children[-1].get_first_leaf()
+            # gosh, this is horrible
+            first_leaf.prefix = f'\n    """{new_docstring}"""\n'
+
+        new_code = tree.get_code()
+        if source != new_code:
+            print(f"Updated class docstring for {class_name}")
+            with path.open("w", encoding="utf-8") as fp:
+                fp.write(tree.get_code())
+
+    return 0
+
+
+def check_cog_data_path_use(cogs: dict) -> int:
+    for pkg_name in cogs:
+        p = subprocess.run(
+            ("git", "grep", "-q", "cog_data_path", "--", f"{pkg_name}/"),
+            cwd=ROOT_PATH,
+            check=False,
+        )
+        if p.returncode == 0:
+            print(
+                "\033[94m\033[1mINFO:\033[0m "
+                f"{pkg_name} uses cog_data_path, make sure"
+                " that you notify the user about it in install message."
+            )
+        elif p.returncode != 1:
+            raise RuntimeError("git grep command failed")
+    return 0
+
+
+def main() -> int:
     print("Loading info.yaml...")
-    with open("info.yaml") as fp:
+    with open(ROOT_PATH / "info.yaml", encoding="utf-8") as fp:
         data = yaml_load(fp.read(), SCHEMA).data
+
+    print("Checking order in sections...")
+    exit_code = check_order(data)
 
     print("Preparing repo's info.json...")
     repo_info = data["repo"]
     repo_info["install_msg"] = repo_info["install_msg"].format_map(
         {"repo_name": repo_info["name"]}
     )
-    with open(ROOT_PATH / "info.json", "w") as fp:
+    with open(ROOT_PATH / "info.json", "w", encoding="utf-8") as fp:
         json.dump(repo_info, fp, indent=4)
 
     requirements: typing.Set[str] = set()
@@ -132,26 +352,77 @@ def main() -> None:
     for pkg_name, cog_info in cogs.items():
         requirements.update(cog_info["requirements"])
         print(f"Preparing info.json for {pkg_name} cog...")
-        output = shared_fields.copy()
-        output.update(cog_info)
+        output = {}
+        for key in AUTOLINT_COG_KEYS_ORDER:
+            if key in SKIP_COG_KEYS_INFO_JSON:
+                continue
+            value = cog_info.get(key)
+            if value is None:
+                value = shared_fields.get(key)
+                if value is None:
+                    continue
+            output[key] = value
         replacements = {
             "repo_name": repo_info["name"],
             "cog_name": output["name"],
         }
+        shared_fields_namespace = SimpleNamespace(**shared_fields)
+        maybe_bundled_data = ROOT_PATH / pkg_name / "data"
+        if maybe_bundled_data.is_dir():
+            new_msg = f"{output['install_msg']}\nThis cog comes with bundled data."
+            output["install_msg"] = new_msg
         for to_replace in ("short", "description", "install_msg"):
-            output[to_replace] = output[to_replace].format_map(replacements)
+            output[to_replace] = safe_format_alt(
+                output[to_replace], {"shared_fields": shared_fields_namespace}
+            )
+            if to_replace == "description":
+                output[to_replace] = output[to_replace].format_map(
+                    {**replacements, "short": output["short"]}
+                )
+            else:
+                output[to_replace] = output[to_replace].format_map(replacements)
 
-        with open(ROOT_PATH / pkg_name / "info.json", "w") as fp:
+        with open(ROOT_PATH / pkg_name / "info.json", "w", encoding="utf-8") as fp:
             json.dump(output, fp, indent=4)
 
     print("Preparing requirements file for CI...")
-    with open(ROOT_PATH / ".ci/requirements/all_cogs.txt", "w") as fp:
+    with open(ROOT_PATH / ".ci/requirements/all_cogs.txt", "w", encoding="utf-8") as fp:
         fp.write("Red-DiscordBot\n")
-        for requirement in requirements:
+        for requirement in sorted(requirements):
             fp.write(f"{requirement}\n")
 
+    print("Preparing all cogs list in README.md...")
+    with open(ROOT_PATH / "README.md", "r+", encoding="utf-8") as fp:
+        text = fp.read()
+        match = re.search(
+            r"# Cogs in this repo\n{2}(.+)\n{2}# Installation", text, flags=re.DOTALL
+        )
+        if match is None:
+            print(
+                "\033[91m\033[1mERROR:\033[0m Couldn't find cogs sections in README.md!"
+            )
+            return 1
+        start, end = match.span(1)
+        lines = []
+        for pkg_name, cog_info in cogs.items():
+            replacements = {
+                "repo_name": repo_info["name"],
+                "cog_name": cog_info["name"],
+            }
+            desc = cog_info["short"].format_map(replacements)
+            lines.append(f"* **{pkg_name}** - {desc}")
+        cogs_section = "\n".join(lines)
+        fp.seek(0)
+        fp.truncate()
+        fp.write(f"{text[:start]}{cogs_section}{text[end:]}")
+
+    print("Updating class docstrings...")
+    update_class_docstrings(cogs, repo_info)
+    check_cog_data_path_use(cogs)
+
     print("Done!")
+    return exit_code
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
