@@ -69,6 +69,10 @@ cogs:
     name: NitroRole
     short: Welcome new nitro boosters and/or give them a special role!
     description: Welcome new nitro boosters and/or give them a special role!
+    install_msg: >-
+      {shared_fields.install_msg}
+
+      This cog saves images set with `[p]nitrorole setimage` to data path.
     tags:
       - announce
       - booster
