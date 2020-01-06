@@ -1,6 +1,7 @@
 import re
+import sys
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import aiohttp
 import discord
@@ -10,10 +11,14 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.config import Config
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
-from typing_extensions import TypedDict
 from yarl import URL
 
 from . import errors
+
+if sys.version_info[:2] >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 
 class RepoItem(TypedDict):
@@ -30,6 +35,8 @@ class CogItem(TypedDict):
 
 
 class CogBoard(commands.Cog):
+    """Search for cogs in approved repos on CogBoard."""
+
     REPOS_POST = "https://cogboard.red/posts/533.json"
     REPOS_REGEX = re.compile(
         r"""
@@ -163,7 +170,11 @@ class CogBoard(commands.Cog):
                 name_matches + desc_matches, key=lambda m: m[1], reverse=True
             )
             pages = []
-            embed_color = await ctx.embed_color()
+            # I don't like how `[p]embedset` currently works, using regular perm check
+            use_embeds = ctx.channel.permissions_for(ctx.me).embed_links
+            if use_embeds:
+                embed_color = await ctx.embed_color()
+            page: Union[discord.Embed, str]
             for match in best_matches:
                 cog = match[0]
                 repo = repo_list.get(
@@ -175,10 +186,29 @@ class CogBoard(commands.Cog):
                         "repo_name": cog["repo_name"],
                     },
                 )
-                embed = discord.Embed(title=cog["name"], color=embed_color)
-                embed.add_field(name="Description", value=cog["description"])
-                embed.add_field(name="Author", value=repo["author"])
-                embed.add_field(name="Repo url", value=repo["repo_url"])
-                embed.add_field(name="Branch", value=repo["branch"])
-                pages.append(embed)
+                if use_embeds:
+                    page = discord.Embed(title=cog["name"], color=embed_color)
+                    page.add_field(
+                        name="Description", value=cog["description"], inline=False
+                    )
+                    page.add_field(name="Author", value=repo["author"], inline=False)
+                    page.add_field(
+                        name="Repo url", value=repo["repo_url"], inline=False
+                    )
+                    page.add_field(name="Branch", value=repo["branch"], inline=False)
+                else:
+                    page = (
+                        f"```asciidoc\n"
+                        f"= {cog['name']} =\n"
+                        f"* Description:\n"
+                        f"  {cog['description']}\n"
+                        f"* Author:\n"
+                        f"  {repo['author']}\n"
+                        f"* Repo url:\n"
+                        f"  {repo['repo_url']}\n"
+                        f"* Branch:\n"
+                        f"  {repo['branch']}\n"
+                        f"```"
+                    )
+                pages.append(page)
         await menu(ctx, pages, DEFAULT_CONTROLS)
