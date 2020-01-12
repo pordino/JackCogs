@@ -1,8 +1,8 @@
 {
     "name": "NitroRole",
-    "short": "Welcome new nitro boosters and/or give them a special role!",
-    "description": "Welcome new nitro boosters and/or give them a special role!",
-    "install_msg": "Thanks for installing NitroRole. If anything doesn't work, you can report it on my issue tracker at <https://github.com/jack1142/JackCogs/issues>.\nThis cog saves images set with `[p]nitrorole setimage` to data path.",
+    "short": "This repo is set to use `unfinished-cogs/nitrorole` branch which is no longer active and it's due to be removed on 29.02.2020.\nNitroRole cog is now in main branch of the repo.\nPlease readd this repo to Downloader under the same name with `v3` branch instead.\n\nIf you have any questions, ask on Cog Support server in #support_othercogs channel.\nhttps://discord.gg/GET4DVk",
+    "description": "This repo is set to use `unfinished-cogs/nitrorole` branch which is no longer active and it's due to be removed on 29.02.2020.\nNitroRole cog is now in main branch of the repo.\nPlease readd this repo to Downloader under the same name with `v3` branch instead.\n\nIf you have any questions, ask on Cog Support server in #support_othercogs channel.\nhttps://discord.gg/GET4DVk",
+    "install_msg": "This repo is set to use `unfinished-cogs/nitrorole` branch which is no longer active and it's due to be removed on 29.02.2020.\nNitroRole cog is now in main branch of the repo.\nPlease readd this repo to Downloader under the same name with `v3` branch instead.\n\nIf you have any questions, ask on Cog Support server in #support_othercogs channel.\nhttps://discord.gg/GET4DVk",
     "required_cogs": {},
     "requirements": [],
     "tags": [

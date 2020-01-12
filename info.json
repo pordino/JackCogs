@@ -2,7 +2,7 @@
     "name": "JackCogs",
     "short": "Unofficial cogs by jack1142 (Jackenmen#6607).",
     "description": "Cogs requested by others and those that I wanted for Red myself.",
-    "install_msg": "Thanks for using JackCogs. If you have any issues, check for more information in my repo: https://github.com/jack1142/JackCogs",
+    "install_msg": "This repo is set to use `unfinished-cogs/nitrorole` branch which is no longer active and it's due to be removed on 29.02.2020.\nNitroRole cog is now in main branch of the repo.\nPlease readd this repo to Downloader under the same name with `v3` branch instead.\n\nIf you have any questions, ask on Cog Support server in #support_othercogs channel.\nhttps://discord.gg/GET4DVk",
     "author": [
         "jack1142 (Jackenmen#6607)"
     ]

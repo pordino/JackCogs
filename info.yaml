@@ -5,15 +5,35 @@ repo:
   short: Unofficial cogs by jack1142 (Jackenmen#6607).
   description: Cogs requested by others and those that I wanted for Red myself.
   install_msg: >-
-    Thanks for using {repo_name}. If you have any issues,
-    check for more information in my repo: https://github.com/jack1142/JackCogs
+    This repo is set to use `unfinished-cogs/nitrorole` branch
+    which is no longer active and it's due to be removed on 29.02.2020.
+
+    NitroRole cog is now in main branch of the repo.
+
+    Please readd this repo to Downloader under the same name with `v3` branch instead.
+
+
+    If you have any questions,
+    ask on Cog Support server in #support_othercogs channel.
+
+    https://discord.gg/GET4DVk
   author:
     - jack1142 (Jackenmen#6607)
 
 shared_fields:
   install_msg: >-
-    Thanks for installing {cog_name}. If anything doesn't work, you can report it
-    on my issue tracker at <https://github.com/jack1142/JackCogs/issues>.
+    This repo is set to use `unfinished-cogs/nitrorole` branch
+    which is no longer active and it's due to be removed on 29.02.2020.
+
+    NitroRole cog is now in main branch of the repo.
+
+    Please readd this repo to Downloader under the same name with `v3` branch instead.
+
+
+    If you have any questions,
+    ask on Cog Support server in #support_othercogs channel.
+
+    https://discord.gg/GET4DVk
   author:
     - jack1142 (Jackenmen#6607)
   hidden: false
@@ -21,105 +41,38 @@ shared_fields:
   type: COG
 
 cogs:
-  banmessage:
-    name: BanMessage
-    short: Send message on ban in a chosen channel. Supports images!
-    description: Send message on ban in a chosen channel. Supports images!
-    install_msg: >-
-      {shared_fields.install_msg}
-
-      This cog saves images set with `[p]banmessageset setimage` to data path.
-    tags:
-      - banmessage
-      - tools
-      - utility
-  cogboard:
-    name: CogBoard
-    short: Search for cogs in approved repos on {cog_name}.
-    description: '{short}'
-    requirements:
-      - typing_extensions>=3.7.4; python_version<="3.7"
-    tags:
-      - cogboard
-      - tools
-      - utility
-  membercount:
-    name: MemberCount
-    short: Get count of all members + humans and bots separately.
-    description: '{short}'
-    tags:
-      - tools
-      - utility
-  modroles:
-    name: ModRoles
-    short: >-
-      Allow moderators without manage roles permission
-      to assign configured roles to users.
-    description: >-
-      Allow moderators without manage roles permission
-      to assign configured roles to users.
-    class_docstring: Allow moderators to assign configured roles to users.
-    tags:
-      - moderation
-      - modroles
-      - roles
-      - tools
-      - utility
   nitrorole:
     name: NitroRole
-    short: Welcome new nitro boosters and/or give them a special role!
-    description: Welcome new nitro boosters and/or give them a special role!
-    install_msg: >-
-      {shared_fields.install_msg}
+    short: >-
+      This repo is set to use `unfinished-cogs/nitrorole` branch
+      which is no longer active and it's due to be removed on 29.02.2020.
 
-      This cog saves images set with `[p]nitrorole setimage` to data path.
+      NitroRole cog is now in main branch of the repo.
+
+      Please readd this repo to Downloader under the same name with `v3` branch instead.
+
+
+      If you have any questions,
+      ask on Cog Support server in #support_othercogs channel.
+
+      https://discord.gg/GET4DVk
+    description: >-
+      This repo is set to use `unfinished-cogs/nitrorole` branch
+      which is no longer active and it's due to be removed on 29.02.2020.
+
+      NitroRole cog is now in main branch of the repo.
+
+      Please readd this repo to Downloader under the same name with `v3` branch instead.
+
+
+      If you have any questions,
+      ask on Cog Support server in #support_othercogs channel.
+
+      https://discord.gg/GET4DVk
+    class_docstring: Welcome new nitro boosters and/or give them a special role!
     tags:
       - announce
       - booster
       - nitro
       - nitrorole
       - welcome
-  rlstats:
-    name: RLStats
-    short: >-
-      Get your Rocket League stats with a single command!
-      Needs access to Rocket League API which is currently in closed beta.
-    description: >-
-      Shows you Rocket League player statistics.
-      The cog needs access to Rocket League API which is currently in closed beta.
-    class_docstring: Get your Rocket League stats with a single command!
-    install_msg: >-
-      Thanks for installing {cog_name}. Before you'll be able to check any stats, you
-      need to configure a Rocket League API user token using command `[p]rlset token`.
-
-      This cog may save background images in data path
-      if the bot owner decides to customize them.
-    requirements:
-      - pillow~=6.0
-      - rlapi==0.2.0a1
-    tags:
-      - api
-      - gaming
-      - rlstats
-      - rocketleague
-    min_bot_version: 3.1.0
-  voicetools:
-    name: VoiceTools
-    short: Various tools to make voice channels better!
-    description: >-
-      {short}
-
-      Available modules:
-
-      - VIP - Set users and roles not counting to user limit on voice channel
-
-      - ForceLimit - Force user limit to all members of the server including admins
-      (kick user when exceeding limit)
-    install_msg: >-
-      Thanks for installing {cog_name}. Use `[p]voicetools` to configure the cog.
-    tags:
-      - tools
-      - utility
-      - voice
-      - voicetools
-    min_bot_version: 3.1.3
