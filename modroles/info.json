@@ -1,8 +1,8 @@
 {
     "name": "ModRoles",
-    "short": "Allow moderators without manage roles permission to assign configured roles to users.",
-    "description": "Allow moderators without manage roles permission to assign configured roles to users.",
-    "install_msg": "Thanks for installing ModRoles. If anything doesn't work, you can report it on my issue tracker at <https://github.com/jack1142/JackCogs/issues>.",
+    "short": "This repo is set to use `unfinished-cogs/modroles` branch which is no longer active and it's due to be removed on 29.02.2020.\nModRoles cog is now in main branch of the repo.\nPlease readd this repo to Downloader under the same name with `v3` branch instead.\n\nIf you have any questions, ask on Cog Support server in #support_othercogs channel.\nhttps://discord.gg/GET4DVk",
+    "description": "This repo is set to use `unfinished-cogs/modroles` branch which is no longer active and it's due to be removed on 29.02.2020.\nModRoles cog is now in main branch of the repo.\nPlease readd this repo to Downloader under the same name with `v3` branch instead.\n\nIf you have any questions, ask on Cog Support server in #support_othercogs channel.\nhttps://discord.gg/GET4DVk",
+    "install_msg": "This repo is set to use `unfinished-cogs/modroles` branch which is no longer active and it's due to be removed on 29.02.2020.\nModRoles cog is now in main branch of the repo.\nPlease readd this repo to Downloader under the same name with `v3` branch instead.\n\nIf you have any questions, ask on Cog Support server in #support_othercogs channel.\nhttps://discord.gg/GET4DVk",
     "required_cogs": {},
     "requirements": [],
     "tags": [
