@@ -1,16 +1,30 @@
+# Copyright 2018-2020 Jakub Kuczys (https://github.com/jack1142)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from io import BytesIO
 from pathlib import Path
 from typing import cast
 
 from PIL import Image, ImageFile
 from redbot.core import commands
+from redbot.core.commands import NoParseOptional as Optional
 from redbot.core.config import Value
 from redbot.core.utils.chat_formatting import inline
 from rlapi.ext.tier_breakdown.trackernetwork import get_tier_breakdown
 
 from .abc import MixinMeta
 from .image import RLStatsImageTemplate
-from .typings import NoParseOptional as Optional
 
 
 class SettingsMixin(MixinMeta):
@@ -23,7 +37,8 @@ class SettingsMixin(MixinMeta):
     async def token(self, ctx: commands.Context) -> None:
         """Instructions to set the Rocket League API tokens."""
         command = inline(
-            f"{ctx.clean_prefix}set api rocket_league user_token PUT_YOUR_USER_TOKEN_HERE"
+            f"{ctx.clean_prefix}"
+            "set api rocket_league user_token PUT_YOUR_USER_TOKEN_HERE"
         )
         message = (
             "**Rocket League API is currently in closed beta"

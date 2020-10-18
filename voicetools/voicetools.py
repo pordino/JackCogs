@@ -1,24 +1,42 @@
+# Copyright 2018-2020 Jakub Kuczys (https://github.com/jack1142)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import logging
 from itertools import zip_longest
-from typing import Optional, cast
+from typing import Any, Awaitable, Callable, Dict, Literal, Optional, cast
 
 import discord
 from redbot.core import commands
+from redbot.core.bot import Red
+from redbot.core.commands import GuildContext
 from redbot.core.config import Config
-from redbot.core.utils import menus
+from redbot.core.utils import AsyncIter, menus
 from redbot.core.utils.chat_formatting import pagify
 
 from .converters import MemberOrRole, MemberOrRoleOrVoiceChannel
-from .typings import GuildContext
 
 log = logging.getLogger("red.jackcogs.voicetools")
+
+RequestType = Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
 class VoiceTools(commands.Cog):
     """Various tools to make voice channels better!"""
 
-    def __init__(self) -> None:
+    def __init__(self, bot: Red) -> None:
         super().__init__()
+        self.bot = bot
         self.config = Config.get_conf(
             self, identifier=6672039729, force_registration=True
         )
@@ -32,6 +50,28 @@ class VoiceTools(commands.Cog):
             "vip_role_list": [],
         }
         self.config.register_guild(**default_guild)
+
+    async def red_get_data_for_user(self, *, user_id: int) -> Dict[str, Any]:
+        # this cog only stores user IDs which is not EUD
+        return {}
+
+    async def red_delete_data_for_user(
+        self, *, requester: RequestType, user_id: int
+    ) -> None:
+        # this cog only stores user IDs which is not EUD
+        if requester != "discord_deleted_user":
+            return
+
+        # but if Discord asks, you don't say no to them
+        data = await self.config.all_guilds()
+        async for guild_id, guild_data in AsyncIter(data.items(), steps=100):
+            async with self.config.guild_from_id(guild_id).all() as guild_data:
+                for group_name in ("forcelimit_ignore_member_list", "vip_member_list"):
+                    guild_data[group_name] = [
+                        member_id
+                        for member_id in guild_data[group_name]
+                        if member_id != user_id
+                    ]
 
     @commands.guild_only()
     @commands.admin()
@@ -294,6 +334,15 @@ class VoiceTools(commands.Cog):
         await self.config.guild(ctx.guild).vip_role_list.set(vip_role_list)
         await ctx.send("VIP list updated")
 
+    async def cog_disabled_in_guild(self, guild: Optional[discord.Guild]) -> bool:
+        # compatibility layer with Red 3.3.10
+        func: Optional[
+            Callable[[commands.Cog, Optional[discord.Guild]], Awaitable[bool]]
+        ] = getattr(self.bot, "cog_disabled_in_guild", None)
+        if func is None:
+            return False
+        return await func(self, guild)
+
     @commands.Cog.listener()
     async def on_voice_state_update(
         self,
@@ -301,6 +350,8 @@ class VoiceTools(commands.Cog):
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
+        if await self.cog_disabled_in_guild(member.guild):
+            return
         if await self.config.guild(member.guild).vip_enabled():
             if await self._vip_check(member, before, after):
                 return
@@ -330,7 +381,7 @@ class VoiceTools(commands.Cog):
                 if before_channel is not None and before_channel.user_limit != 0:
                     await before_channel.edit(user_limit=before_channel.user_limit - 1)
                     channel_id = before_channel.id
-                    log.info(
+                    log.debug(
                         (
                             "VIP with ID %s (%s)"
                             " left voice channel with ID %s, lowering user limit!"
@@ -345,7 +396,7 @@ class VoiceTools(commands.Cog):
                 if after_channel is not None and after_channel.user_limit != 0:
                     await after_channel.edit(user_limit=after_channel.user_limit + 1)
                     channel_id = after_channel.id
-                    log.info(
+                    log.debug(
                         (
                             "VIP with ID %s (%s)"
                             " left voice channel with ID %s, raising user limit!"
@@ -381,7 +432,7 @@ class VoiceTools(commands.Cog):
             ):
                 return
             await member.move_to(None)
-            log.info(
+            log.debug(
                 (
                     "Member with ID %s joined voice channel with ID %s"
                     " exceeding its limit, disconnecting!"

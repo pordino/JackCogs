@@ -1,21 +1,35 @@
+# Copyright 2018-2020 Jakub Kuczys (https://github.com/jack1142)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import asyncio
 import logging
 import random
 from string import Template
-from typing import Union, cast
+from typing import Any, Awaitable, Callable, Dict, Literal, Union, cast
 
 import discord
-from redbot.core import commands, checks
+from redbot.core import commands
 from redbot.core.bot import Red
+from redbot.core.commands import GuildContext, NoParseOptional as Optional
 from redbot.core.config import Config
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core.utils.predicates import MessagePredicate
 
-from .typings import GuildContext, NoParseOptional as Optional
-
-
 log = logging.getLogger("red.jackcogs.banmessage")
+
+RequestType = Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
 class BanMessage(commands.Cog):
@@ -30,8 +44,18 @@ class BanMessage(commands.Cog):
         self.message_images = cog_data_path(self) / "message_images"
         self.message_images.mkdir(exist_ok=True)
 
+    async def red_get_data_for_user(self, *, user_id: int) -> Dict[str, Any]:
+        # this cog does not story any data
+        return {}
+
+    async def red_delete_data_for_user(
+        self, *, requester: RequestType, user_id: int
+    ) -> None:
+        # this cog does not story any data
+        pass
+
+    @commands.admin_or_permissions(manage_guild=True)
     @commands.guild_only()
-    @checks.admin()
     @commands.group()
     async def banmessageset(self, ctx: GuildContext) -> None:
         """BanMessage settings."""
@@ -211,10 +235,21 @@ class BanMessage(commands.Cog):
             file.unlink()
         await ctx.send("Image unset.")
 
+    async def cog_disabled_in_guild(self, guild: Optional[discord.Guild]) -> bool:
+        # compatibility layer with Red 3.3.10
+        func: Optional[
+            Callable[[commands.Cog, Optional[discord.Guild]], Awaitable[bool]]
+        ] = getattr(self.bot, "cog_disabled_in_guild", None)
+        if func is None:
+            return False
+        return await func(self, guild)
+
     @commands.Cog.listener()
     async def on_member_ban(
         self, guild: discord.Guild, user: Union[discord.User, discord.Member]
     ) -> None:
+        if await self.cog_disabled_in_guild(guild):
+            return
         # TODO: add caching to prevent a lot of fetches when mass-banning users
         settings = await self.config.guild(guild).all()
         channel_id = settings["channel"]

@@ -1,20 +1,36 @@
+# Copyright 2018-2020 Jakub Kuczys (https://github.com/jack1142)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import asyncio
 import logging
 import random
-from typing import Dict, cast
+from typing import Any, Awaitable, Callable, Dict, Literal, cast
 
 import discord
 from redbot.core import commands
 from redbot.core.bot import Red
+from redbot.core.commands import GuildContext, NoParseOptional as Optional
 from redbot.core.config import Config
 from redbot.core.data_manager import cog_data_path
 from redbot.core.utils.chat_formatting import box, pagify
 from redbot.core.utils.predicates import MessagePredicate
 
 from .guild_data import GuildData
-from .typings import GuildContext, NoParseOptional as Optional
 
 log = logging.getLogger("red.jackcogs.nitrorole")
+
+RequestType = Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
 class NitroRole(commands.Cog):
@@ -35,6 +51,16 @@ class NitroRole(commands.Cog):
         self.message_images.mkdir(parents=True, exist_ok=True)
         self.guild_cache: Dict[int, GuildData] = {}
         # TODO: possibly load guild data in cache on load?
+
+    async def red_get_data_for_user(self, *, user_id: int) -> Dict[str, Any]:
+        # this cog does not story any data
+        return {}
+
+    async def red_delete_data_for_user(
+        self, *, requester: RequestType, user_id: int
+    ) -> None:
+        # this cog does not story any data
+        pass
 
     async def get_guild_data(self, guild: discord.Guild) -> GuildData:
         try:
@@ -278,12 +304,25 @@ class NitroRole(commands.Cog):
             file.unlink()
         await ctx.send("Image unset.")
 
+    async def cog_disabled_in_guild(self, guild: Optional[discord.Guild]) -> bool:
+        # compatibility layer with Red 3.3.10
+        func: Optional[
+            Callable[[commands.Cog, Optional[discord.Guild]], Awaitable[bool]]
+        ] = getattr(self.bot, "cog_disabled_in_guild", None)
+        if func is None:
+            return False
+        return await func(self, guild)
+
     @commands.Cog.listener()
     async def on_member_update(
         self, before: discord.Member, after: discord.Member
     ) -> None:
         if before.premium_since == after.premium_since:
             return
+
+        if await self.cog_disabled_in_guild(after.guild):
+            return
+
         guild_data = await self.get_guild_data(after.guild)
 
         if before.premium_since is None and after.premium_since is not None:

@@ -1,12 +1,30 @@
+# Copyright 2018-2020 Jakub Kuczys (https://github.com/jack1142)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from typing import Any, Dict, Literal
+
 import discord
-from redbot.core import commands, checks
+from redbot.core import commands
 from redbot.core.bot import Red
+from redbot.core.commands import GuildContext, NoParseOptional as Optional
 from redbot.core.config import Config
 from redbot.core.utils.chat_formatting import box
 from redbot.core.utils.mod import is_mod_or_superior
 
 from .converters import AssignableRoleConverter as AssignableRole
-from .typings import GuildContext, NoParseOptional as Optional
+
+RequestType = Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
 class ModRoles(commands.Cog):
@@ -20,6 +38,16 @@ class ModRoles(commands.Cog):
         self.config.register_guild(
             assignable_roles=[], allow_bots=False, toprole_check=True
         )
+
+    async def red_get_data_for_user(self, *, user_id: int) -> Dict[str, Any]:
+        # this cog does not story any data
+        return {}
+
+    async def red_delete_data_for_user(
+        self, *, requester: RequestType, user_id: int
+    ) -> None:
+        # this cog does not story any data
+        pass
 
     async def _assign_checks(
         self, ctx: GuildContext, member: discord.Member, role: discord.Role
@@ -52,7 +80,7 @@ class ModRoles(commands.Cog):
 
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
-    @checks.mod_or_permissions(manage_roles=True)
+    @commands.mod_or_permissions(manage_roles=True)
     @commands.command()
     async def assignrole(
         self, ctx: GuildContext, role: AssignableRole, *, member: discord.Member
@@ -86,7 +114,7 @@ class ModRoles(commands.Cog):
 
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
-    @checks.mod_or_permissions(manage_roles=True)
+    @commands.mod_or_permissions(manage_roles=True)
     @commands.command()
     async def unassignrole(
         self, ctx: GuildContext, role: AssignableRole, *, member: discord.Member
@@ -119,7 +147,7 @@ class ModRoles(commands.Cog):
             await ctx.send(f"Role {role.name} removed from {member.display_name}")
 
     @commands.guild_only()
-    @checks.admin_or_permissions(manage_roles=True)
+    @commands.admin_or_permissions(manage_roles=True)
     @commands.group()
     async def modroles(self, ctx: GuildContext) -> None:
         """Settings for assignable roles."""
@@ -173,7 +201,9 @@ class ModRoles(commands.Cog):
         valid_roles_ids = set(r.id for r in valid_roles)
 
         if assignable_roles != valid_roles_ids:
-            await self.config.guild(ctx.guild).assignable_roles.set(valid_roles_ids)
+            await self.config.guild(ctx.guild).assignable_roles.set(
+                list(valid_roles_ids)
+            )
 
         fmt_assignable_roles = "\n".join([f"+ {r.name}" for r in valid_roles])
 

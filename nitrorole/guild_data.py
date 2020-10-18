@@ -1,5 +1,19 @@
+# Copyright 2018-2020 Jakub Kuczys (https://github.com/jack1142)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from string import Template
-from typing import List, Optional, cast
+from typing import List, Optional
 
 import discord
 from redbot.core.config import Config, Group
@@ -65,10 +79,7 @@ class GuildData:
         try:
             return self._config_group
         except AttributeError:
-            # this is a big lie but Config only cares about the guild's id
-            # remove this when I start requiring Red 3.2 for this cog
-            fake_guild = cast(discord.Guild, discord.Object(id=self.id))
-            config_group = self._config.guild(fake_guild)
+            config_group = self._config.guild_from_id(self.id)
             self._config_group = config_group
             return config_group
 

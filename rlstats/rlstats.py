@@ -1,16 +1,31 @@
+# Copyright 2018-2020 Jakub Kuczys (https://github.com/jack1142)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import asyncio
 import contextlib
 import functools
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
-from typing import Any, Callable, Dict, List, Mapping, Tuple, TypeVar, cast
+from typing import Any, Callable, Dict, List, Literal, Mapping, Tuple, TypeVar, cast
 
 import discord
 import rlapi
 from PIL import ImageFont
 from redbot.core import commands
 from redbot.core.bot import Red
+from redbot.core.commands import NoParseOptional as Optional
 from redbot.core.config import Config
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.utils.chat_formatting import bold, inline
@@ -23,12 +38,11 @@ from .abc import CogAndABCMeta
 from .figures import Point
 from .image import CoordsInfo, RLStatsImageTemplate
 from .settings import SettingsMixin
-from .typings import NoParseOptional as Optional
-
 
 log = logging.getLogger("red.jackcogs.rlstats")
 
 T = TypeVar("T")
+RequestType = Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
 SUPPORTED_PLATFORMS = """Supported platforms:
@@ -201,6 +215,23 @@ class RLStats(SettingsMixin, commands.Cog, metaclass=CogAndABCMeta):
 
     __del__ = cog_unload
 
+    async def red_get_data_for_user(self, *, user_id: int) -> Dict[str, BytesIO]:
+        try:
+            player_id, platform = await self._get_player_data_by_user_id(user_id)
+        except errors.PlayerDataNotFound:
+            return {}
+        contents = (
+            f"Rocket League game account for Discord user with ID {user_id}:\n"
+            f"- Platform: {platform}\n"
+            f"- Player ID: {player_id}\n"
+        )
+        return {"user_data.txt": BytesIO(contents.encode())}
+
+    async def red_delete_data_for_user(
+        self, *, requester: RequestType, user_id: int
+    ) -> None:
+        await self.config.user_from_id(user_id).clear()
+
     async def _run_in_executor(
         self, func: Callable[..., T], *args: Any, **kwargs: Any
     ) -> T:
@@ -244,16 +275,21 @@ class RLStats(SettingsMixin, commands.Cog, metaclass=CogAndABCMeta):
             return False
         return True
 
-    async def _get_player_data_by_user(
-        self, user: discord.abc.User
+    async def _get_player_data_by_user_id(
+        self, user_id: int
     ) -> Tuple[str, rlapi.Platform]:
-        user_data = await self.config.user(user).all()
+        user_data = await self.config.user_from_id(user_id).all()
         player_id, platform = user_data["player_id"], user_data["platform"]
         if player_id is not None:
             return (player_id, rlapi.Platform[platform])
         raise errors.PlayerDataNotFound(
-            f"Couldn't find player data for discord user with ID {user.id}"
+            f"Couldn't find player data for discord user with ID {user_id}"
         )
+
+    async def _get_player_data_by_user(
+        self, user: discord.abc.User
+    ) -> Tuple[str, rlapi.Platform]:
+        return await self._get_player_data_by_user_id(user.id)
 
     async def _get_players(
         self, player_ids: List[Tuple[str, Optional[rlapi.Platform]]]
@@ -264,7 +300,8 @@ class RLStats(SettingsMixin, commands.Cog, metaclass=CogAndABCMeta):
                 players += await self.rlapi_client.get_player(player_id, platform)
         if not players:
             raise rlapi.PlayerNotFound
-        return tuple(players)
+        # using dict.fromkeys() to make duplicates go away
+        return tuple(dict.fromkeys(players))
 
     async def _maybe_get_players(
         self,
@@ -321,10 +358,10 @@ class RLStats(SettingsMixin, commands.Cog, metaclass=CogAndABCMeta):
 
             emojis = ReactionPredicate.NUMBER_EMOJIS[1 : players_len + 1]
             start_adding_reactions(msg, emojis)
-            pred = ReactionPredicate.with_emojis(emojis, msg)
+            pred = ReactionPredicate.with_emojis(emojis, msg, ctx.author)
 
             try:
-                await ctx.bot.wait_for("reaction_add", check=pred, timeout=15)
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=25)
             except asyncio.TimeoutError:
                 raise errors.NoChoiceError(
                     "User didn't choose profile he wants to check"
@@ -434,7 +471,9 @@ class RLStats(SettingsMixin, commands.Cog, metaclass=CogAndABCMeta):
                 player = await self._choose_player(ctx, players)
             except errors.NoChoiceError as e:
                 log.debug(e)
-                await ctx.send("You didn't choose profile you want to check.")
+                await ctx.send(
+                    "You didn't select a profile that you would like to check."
+                )
                 return
 
             # TODO: This should probably be handled in rlapi module
@@ -477,7 +516,9 @@ class RLStats(SettingsMixin, commands.Cog, metaclass=CogAndABCMeta):
                 player = await self._choose_player(ctx, players)
             except errors.NoChoiceError as e:
                 log.debug(str(e))
-                await ctx.send("You didn't choose profile you want to connect.")
+                await ctx.send(
+                    "You didn't select a profile that you would like to connect."
+                )
                 return
 
             await self.config.user(ctx.author).platform.set(player.platform.name)
@@ -488,6 +529,15 @@ class RLStats(SettingsMixin, commands.Cog, metaclass=CogAndABCMeta):
         )
 
     rlconnect.callback.__doc__ += f"\n\n{SUPPORTED_PLATFORMS}"
+
+    @commands.command()
+    async def rldisconnect(self, ctx: commands.Context) -> None:
+        """
+        Disconnect the game profile associated with
+        your Discord account from RLStats cog.
+        """
+        await self.config.user(ctx.author).clear()
+        await ctx.send("Your game account was successfully disconnected from Discord!")
 
     @commands.Cog.listener()
     async def on_red_api_tokens_update(
