@@ -169,9 +169,8 @@ class AutoGist(commands.Cog):
             "<https://github.com/settings/tokens>\n"
             "If you do not trust this to your own account,"
             " it's recommended that you make a new GitHub account to act for the bot.\n"
-            "No additional permissions are required for public repositories;"
-            " if you want to fetch from private repositories,"
-            " you will need to set full `repo` scope.\n\n"
+            "This cog requires gist permissions,"
+            " so you will need to select `gist` scope for the token.\n\n"
             "When you generate the token, copy it"
             " and use the following command in DMs with the bot:\n"
             f"{command}"
@@ -628,4 +627,4 @@ class AutoGist(commands.Cog):
         """Update GitHub token when `[p]set api` command is used."""
         if service_name != "github":
             return
-        self.oauth_token = await self._get_token(api_tokens)
+        self.gh.oauth_token = await self._get_token(api_tokens)

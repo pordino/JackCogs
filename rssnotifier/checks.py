@@ -25,7 +25,9 @@ else:
 
 
 def single_user_pings_enabled() -> CheckDecorator:
-    async def predicate(ctx: commands.GuildContext) -> bool:
+    async def predicate(ctx: commands.Context) -> bool:
+        if ctx.guild is None:
+            return False
         cog = cast(RSSNotifier, ctx.cog)
         ping_single_users = await cog.config.guild(ctx.guild).ping_single_users()
         if ping_single_users:
